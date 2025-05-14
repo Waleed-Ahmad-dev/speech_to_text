@@ -14,14 +14,14 @@ export interface UploadedAudioFile {
      size: number;
 }
 
-export const handleAudioUpload = async (file: UploadedAudioFile) => {
+export const handleAudioUpload = async (file: UploadedAudioFile, language: string = 'auto') => {
      if (!file) throw new Error('No audio file uploaded');
 
      const originalPath = file.path;
      const outputDir = path.dirname(originalPath);
      const baseName = path.basename(originalPath, path.extname(originalPath));
      const convertedPath = path.join(outputDir, `${baseName}-converted.wav`);
-     const model = 'small.en';
+     const model = 'ggml-small'; // Using multilingual model
 
      try {
           // Step 1: Convert any audio file to 16kHz mono WAV
@@ -29,8 +29,8 @@ export const handleAudioUpload = async (file: UploadedAudioFile) => {
           console.log(`Converting audio with FFmpeg: ${ffmpegCmd}`);
           execSync(ffmpegCmd, { stdio: 'inherit' });
 
-          // Step 2: Transcribe using Whisper CLI
-          const whisperCmd = `python -m whisper "${convertedPath}" --model ${model} --language en --fp16 False --output_format txt --output_dir "${outputDir}"`;
+          // Step 2: Transcribe using Whisper CLI with dynamic language
+          const whisperCmd = `python -m whisper "${convertedPath}" --model ${model} --language ${language} --fp16 False --output_format txt --output_dir "${outputDir}"`;
           console.log(`Running Whisper: ${whisperCmd}`);
           execSync(whisperCmd, { encoding: 'utf-8' });
 
@@ -47,11 +47,11 @@ export const handleAudioUpload = async (file: UploadedAudioFile) => {
           fs.unlinkSync(convertedPath);     // converted .wav
           fs.unlinkSync(transcriptPath);    // whisper output
 
-          // Step 5: Save transcript to DB
+          // Step 5: Save transcript to DB with language
           const saved = await prisma.transcription.create({
                data: {
                     text: transcript,
-                    language: 'en-US',
+                    language: language === 'ur' ? 'ur' : 'en-US',  // Save 'ur' for Urdu, 'en-US' for English
                },
           });
 
