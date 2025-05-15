@@ -21,7 +21,7 @@ export const handleAudioUpload = async (file: UploadedAudioFile, language: strin
      const outputDir = path.dirname(originalPath);
      const baseName = path.basename(originalPath, path.extname(originalPath));
      const convertedPath = path.join(outputDir, `${baseName}-converted.wav`);
-     const model = 'ggml-small'; // Using multilingual model
+     const model = 'small'; // Using multilingual model
 
      try {
           // Step 1: Convert any audio file to 16kHz mono WAV
