@@ -1,4 +1,4 @@
-# app.py
+import time
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from faster_whisper import WhisperModel
@@ -17,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model_size = "small"
+model_size = "base"
 model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
 @app.post("/transcribe")
@@ -32,6 +32,8 @@ async def transcribe_audio(file: UploadFile = File(...), language: str = Form(de
         forced_language = language if language and language.lower() != 'auto' else None
         segments, info = model.transcribe(temp_path, beam_size=1, language=forced_language)
         detected_lang = info.language
+        
+        start_time = time.time()
 
         # Override Hindi → Urdu metadata
         if detected_lang == "hi":
@@ -44,6 +46,10 @@ async def transcribe_audio(file: UploadFile = File(...), language: str = Form(de
             segments, info = model.transcribe(temp_path, beam_size=1, language="ur")
             full_text = " ".join([segment.text for segment in segments])
             detected_lang = "ur"
+            
+        elapsed = time.time() - start_time
+        
+        print(f"[Transcription] took {elapsed:.2f} seconds. Detected language: {detected_lang}")
 
         return {"transcript": full_text.strip(), "language": detected_lang}
 
