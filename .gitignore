@@ -132,3 +132,7 @@ dist
 models
 
 whisper-env
+
+venv
+
+.vscode
