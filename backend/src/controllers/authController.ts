@@ -5,13 +5,14 @@ import { sendVerificationEmail } from '../services/emailService';
 
 const prisma = new PrismaClient();
 
-export const signUp = async (req: Request, res: Response) => {
+export const signUp = async (req: Request, res: Response): Promise<void> => {
      const { email, name } = req.body;
 
      try {
           // Validate input
           if (!email) {
-               return res.status(400).json({ error: 'Email is required' });
+               res.status(400).json({ error: 'Email is required' });
+               return;
           }
 
           // Check for existing user
@@ -20,11 +21,12 @@ export const signUp = async (req: Request, res: Response) => {
           });
 
           if (existingUser) {
-               return res.status(400).json({ 
+               res.status(400).json({ 
                     error: existingUser.emailVerified 
                          ? 'Email already in use' 
                          : 'Verification email already sent. Please check your inbox.'
                     });
+               return;
           }
 
           // Create new user
@@ -62,12 +64,13 @@ export const signUp = async (req: Request, res: Response) => {
      }
 };
 
-export const verifyEmail = async (req: Request, res: Response) => {
+export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
      const { token } = req.query;
 
      try {
           if (!token || typeof token !== 'string') {
-               return res.status(400).json({ error: 'Invalid token' });
+               res.status(400).json({ error: 'Invalid token' });
+               return;
           }
 
           const verificationToken = await prisma.verificationToken.findUnique({
@@ -75,12 +78,14 @@ export const verifyEmail = async (req: Request, res: Response) => {
           });
 
           if (!verificationToken) {
-               return res.status(400).json({ error: 'Invalid token' });
+               res.status(400).json({ error: 'Invalid token' });
+               return;
           }
 
           if (verificationToken.expires < new Date()) {
                await prisma.verificationToken.delete({ where: { token } });
-               return res.status(400).json({ error: 'Token expired' });
+               res.status(400).json({ error: 'Token expired' });
+               return;
           }
 
           // Update user verification status
