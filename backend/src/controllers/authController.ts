@@ -161,3 +161,76 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           res.status(500).json({ error: 'Internal server error' });
      }
 };
+
+export const verifyLogin = async (req: Request, res: Response): Promise<void> => {
+     const { token } = req.query;
+
+     try {
+          if (!token || typeof token !== 'string') {
+               res.status(400).json({ error: 'Invalid token' });
+               return;
+          }
+
+          // Verify token
+          const verificationToken = await prisma.verificationToken.findUnique({
+               where: { token },
+          });
+
+          if (!verificationToken) {
+               res.status(400).json({ error: 'Invalid token' });
+               return;
+          }
+
+          if (verificationToken.expires < new Date()) {
+               await prisma.verificationToken.delete({ where: { token } });
+               res.status(400).json({ error: 'Token expired' });
+               return;
+          }
+
+          // Get user
+          const user = await prisma.user.findUnique({
+               where: { email: verificationToken.identifier },
+          });
+
+          if (!user) {
+               res.status(404).json({ error: 'User not found' });
+               return;
+          }
+
+          // Create session (using your Session model)
+          const sessionToken = crypto.randomBytes(32).toString('hex');
+          const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+          await prisma.session.create({
+               data: {
+                    sessionToken,
+                    userId: user.id,
+                    expires,
+               },
+          });
+
+          // Delete used token
+          await prisma.verificationToken.delete({ where: { token } });
+
+          // Set session cookie (adjust based on your frontend needs)
+          res.cookie('sessionToken', sessionToken, {
+               httpOnly: true,
+               secure: process.env.NODE_ENV === 'production',
+               sameSite: 'strict',
+               maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+          });
+
+          res.status(200).json({
+               message: 'Login successful',
+               user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    image: user.image,
+               },
+          });
+     } catch (error) {
+          console.error('Login verification error:', error);
+          res.status(500).json({ error: 'Internal server error' });
+     }
+};
