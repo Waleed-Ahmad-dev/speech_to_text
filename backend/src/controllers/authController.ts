@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-import { sendVerificationEmail } from '../services/emailService';
+import { sendLoginEmail, sendVerificationEmail } from '../services/emailService';
 
 const prisma = new PrismaClient();
 
@@ -100,6 +100,64 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
           res.status(200).json({ message: 'Email verified successfully' });
      } catch (error) {
           console.error('Verification error:', error);
+          res.status(500).json({ error: 'Internal server error' });
+     }
+};
+
+export const login = async (req: Request, res: Response): Promise<void> => {
+     const { email } = req.body;
+
+     try {
+          // Validate input
+          if (!email) {
+               res.status(400).json({ error: 'Email is required' });
+               return;
+          }
+
+          // Check if user exists
+          const user = await prisma.user.findUnique({
+               where: { email },
+          });
+
+          if (!user) {
+               res.status(404).json({ error: 'User not found' });
+               return;
+          }
+
+          // Check if email is verified
+          if (!user.emailVerified) {
+               res.status(403).json({ 
+                    error: 'Email not verified. Please verify your email first.' 
+               });
+               return;
+          }
+
+          // Delete any existing login tokens for this email
+          await prisma.verificationToken.deleteMany({
+               where: { identifier: email }
+          });
+
+          // Generate login token
+          const token = crypto.randomBytes(32).toString('hex');
+          const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiration
+
+          // Save login token
+          await prisma.verificationToken.create({
+               data: {
+                    identifier: email,
+                    token,
+                    expires,
+               },
+          });
+
+          // Send login email
+          await sendLoginEmail(email, token);
+
+          res.status(200).json({
+               message: 'Login email sent. Please check your inbox.',
+          });
+     } catch (error) {
+          console.error('Login error:', error);
           res.status(500).json({ error: 'Internal server error' });
      }
 };
