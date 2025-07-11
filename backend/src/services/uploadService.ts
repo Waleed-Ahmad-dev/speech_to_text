@@ -18,6 +18,7 @@ export interface UploadedAudioFile {
 
 export const handleAudioUpload = async (
     file: UploadedAudioFile,
+    userId: number,
     language: string = 'auto'  // Default to auto-detection
 ) => {
     if (!file) throw new Error('No audio file uploaded');
@@ -70,6 +71,9 @@ export const handleAudioUpload = async (
                 language: data.requested_language === 'auto' 
                     ? data.language 
                     : data.requested_language,
+                user: {
+                    connect: { id: userId.toString() }
+                }
             },
         });
 
