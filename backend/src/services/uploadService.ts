@@ -18,7 +18,7 @@ export interface UploadedAudioFile {
 
 export const handleAudioUpload = async (
     file: UploadedAudioFile,
-    language: string = 'auto'
+    language: string = 'auto'  // Default to auto-detection
 ) => {
     if (!file) throw new Error('No audio file uploaded');
 
@@ -28,7 +28,7 @@ export const handleAudioUpload = async (
     const convertedPath = path.join(outputDir, `${baseName}-converted.wav`);
 
     try {
-        // 1. Convert audio to 16kHz mono wav
+        // Convert audio to 16kHz mono wav
         const ffmpeg = spawnSync(
             'ffmpeg',
             ['-y', '-i', originalPath, '-ac', '1', '-ar', '16000', '-sample_fmt', 's16', convertedPath],
@@ -36,12 +36,12 @@ export const handleAudioUpload = async (
         );
         if (ffmpeg.status !== 0) throw new Error('FFmpeg conversion failed');
 
-        // 2. Prepare form data with converted audio file
+        // Prepare form data
         const form = new FormData();
         form.append('file', fs.createReadStream(convertedPath));
-        form.append('language', language);
+        form.append('language', language);  // Pass user-selected language
 
-        // 3. Call FastAPI transcribe endpoint
+        // Call FastAPI endpoint
         const response = await fetch('http://127.0.0.1:8000/transcribe', {
             method: 'POST',
             body: form,
@@ -52,18 +52,24 @@ export const handleAudioUpload = async (
             throw new Error(`Transcription API error: ${response.statusText}`);
         }
 
-        const data = await response.json() as { transcript: string; language: string };
+        const data = await response.json() as { 
+            transcript: string; 
+            language: string;
+            requested_language: string;
+        };
 
-        // 4. Cleanup files
+        // Cleanup files
         [originalPath, convertedPath].forEach(p => {
             if (fs.existsSync(p)) fs.unlinkSync(p);
         });
 
-        // 5. Persist transcription in DB
+        // Persist transcription
         const saved = await prisma.transcription.create({
             data: {
                 text: data.transcript,
-                language: data.language,
+                language: data.requested_language === 'auto' 
+                    ? data.language 
+                    : data.requested_language,
             },
         });
 
@@ -71,6 +77,8 @@ export const handleAudioUpload = async (
             message: 'Transcription successful',
             transcription: data.transcript,
             id: saved.id,
+            detectedLanguage: data.language,
+            requestedLanguage: data.requested_language
         };
 
     } catch (err: any) {
