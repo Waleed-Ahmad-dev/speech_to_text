@@ -1,11 +1,14 @@
 import 'dotenv/config';
 import express from 'express';
 import router from './routes/uploadRoute';
+import authRoutes from './routes/authRoutes';
 
 const app = express();
 
 app.use(express.json());
 app.use("/api", router)
+app.use('/auth', authRoutes);
+
 
 app.get('/', (req, res) => {
      res.send('Speech-to-Text API is running');
