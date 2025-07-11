@@ -11,6 +11,7 @@
   "dependencies": {
     "@prisma/client": "^6.11.1",
     "next": "15.3.5",
+    "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.5",
     "prisma": "^6.11.1",
     "react": "^19.0.0",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/node-fetch": "^2.6.12",
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19",
     "@types/react-dom": "^19",
