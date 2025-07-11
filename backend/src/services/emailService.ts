@@ -21,3 +21,18 @@ export const sendVerificationEmail = async (email: string, token: string) => {
           `,
      });
 };
+
+export const sendLoginEmail = async (email: string, token: string) => {
+     const loginUrl = `${process.env.BASE_URL}/verify-login?token=${token}`;
+
+     await transporter.sendMail({
+          from: `"Your App" <${process.env.EMAIL_USER}>`,
+          to: email,
+          subject: 'Your Login Link',
+          html: `
+               <p>Click the link below to log in:</p>
+               <a href="${loginUrl}">Login to Your Account</a>
+               <p>This link will expire in 15 minutes.</p>
+          `,
+     });
+};
