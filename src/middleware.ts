@@ -5,11 +5,15 @@ export async function middleware(request: NextRequest) {
      const protectedRoutes = ['/dashboard', '/account', '/transcribe'];
      const { pathname } = request.nextUrl;
 
+
      if (protectedRoutes.some(route => pathname.startsWith(route))) {
           const sessionToken = request.cookies.get('sessionToken')?.value;
 
           if (!sessionToken) {
                return NextResponse.redirect(new URL('/login', request.url));
+          }
+          if (pathname === '/login' && sessionToken) {
+               return NextResponse.redirect(new URL('/', request.url));
           }
 
           const session = await prisma.session.findUnique({
@@ -34,6 +38,7 @@ export async function middleware(request: NextRequest) {
                }
           });
      }
+
 
      return NextResponse.next();
 }
