@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { OAuthButtons } from '@/components/OAuthButtons';
 
 export default function LoginPage() {
      const [email, setEmail] = useState('');
@@ -65,6 +66,10 @@ export default function LoginPage() {
                               {isLoading ? 'Sending login link...' : 'Login'}
                          </button>
                     </form>
+
+                    <div className="mt-6">
+                         <OAuthButtons />
+                    </div>
 
                     {message && (
                          <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-md">
