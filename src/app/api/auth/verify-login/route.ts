@@ -44,15 +44,14 @@ export async function GET(request: NextRequest) {
 
           await prisma.verificationToken.delete({ where: { token } })
 
-          const response = NextResponse.json({
-               message: 'Login successful',
-               user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    image: user.image,
-               },
-          })
+          const response = NextResponse.redirect(new URL('/', request.nextUrl.origin));
+               response.cookies.set('sessionToken', sessionToken, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'strict',
+                    maxAge: 30 * 24 * 60 * 60,
+                    path: '/',
+               });
 
           response.cookies.set('sessionToken', sessionToken, {
                httpOnly: true,
