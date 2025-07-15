@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { OAuthButtons } from '@/components/OAuthButtons';
 
 export default function SignupPage() {
      const router = useRouter();
@@ -97,6 +98,8 @@ export default function SignupPage() {
                               </button>
                          </div>
                     </form>
+
+                    <OAuthButtons />
 
                     <div className="text-center mt-4">
                          <p className="text-sm text-gray-600">
