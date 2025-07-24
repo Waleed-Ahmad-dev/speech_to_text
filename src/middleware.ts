@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
 export async function middleware(request: NextRequest) {
-     const protectedRoutes = ['/dashboard', '/account', '/transcribe'];
      const { pathname } = request.nextUrl;
+     const sessionToken = request.cookies.get('sessionToken')?.value;
 
+     // Redirect logged-in users from /login to /transcribe
+     if (pathname === '/login' && sessionToken) {
+          return NextResponse.redirect(new URL('/transcribe', request.url));
+     }
 
-     if (protectedRoutes.some(route => pathname.startsWith(route))) {
-          const sessionToken = request.cookies.get('sessionToken')?.value;
+     const protectedExactRoutes = ['/'];
+     const protectedPrefixRoutes = ['/dashboard', '/account', '/transcribe'];
 
+     if (protectedExactRoutes.includes(pathname) || protectedPrefixRoutes.some(route => pathname.startsWith(route))) {
           if (!sessionToken) {
                return NextResponse.redirect(new URL('/login', request.url));
-          }
-          if (pathname === '/login' && sessionToken) {
-               return NextResponse.redirect(new URL('/', request.url));
           }
 
           const session = await prisma.session.findUnique({
@@ -37,8 +39,7 @@ export async function middleware(request: NextRequest) {
                     headers: requestHeaders,
                }
           });
-     }
-
+     }     
 
      return NextResponse.next();
 }
