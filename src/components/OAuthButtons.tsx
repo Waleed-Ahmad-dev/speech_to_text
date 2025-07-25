@@ -11,17 +11,6 @@ export function OAuthButtons() {
 
      return (
           <div className="mt-8 space-y-6">
-               <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                         <div className="w-full border-t border-gray-700" />
-                    </div>
-                    <div className="relative flex justify-center">
-                         <span className="px-3 bg-gray-900 text-sm text-gray-400">
-                              Or continue with
-                         </span>
-                    </div>
-               </div>
-
                <div className="grid grid-cols-2 gap-4">
                     {/* Google Button */}
                     <motion.button
