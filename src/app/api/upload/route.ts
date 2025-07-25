@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
 import { handleAudioUpload } from '@/services/uploadService'
-import { getSession } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 
 export const config = {
      api: {
@@ -12,8 +13,10 @@ export const config = {
 
 export async function POST(request: NextRequest) {
      try {
-          const session = await getSession()
-          if (!session) {
+          // Get user session using NextAuth
+          const session = await getServerSession(authOptions)
+
+          if (!session || !session.user || !session.user.id) {
                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
           }
 
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
           const result = await handleAudioUpload(
                filePath,
                file.name,
-               session.user.id,
+               session.user.id, // Pass authenticated user ID
                language
           )
 

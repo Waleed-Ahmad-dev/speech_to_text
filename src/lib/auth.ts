@@ -18,7 +18,7 @@ declare module "next-auth" {
 
 export const getSession = async () => {
      const cookieStore = await cookies()
-     const sessionToken = cookieStore.get('sessionToken')?.value
+     const sessionToken = cookieStore.get('sessionToken')?.value || cookieStore.get('next-auth.session-token')?.value;
      if (!sessionToken) return null
 
      const session = await prisma.session.findUnique({
@@ -45,14 +45,19 @@ export const authOptions: NextAuthOptions = {
                clientSecret: process.env.GITHUB_CLIENT_SECRET!,
           }),
      ],
+     session: {
+          strategy: 'jwt', // Required for middleware compatibility
+     },
      callbacks: {
-          async session({ session, user }) {
+          async session({ session, token }) {
                if (session.user) {
-                    session.user.id = user.id;
-                    session.user.name = user.name || null;
+                    session.user.id = token.sub!;
                }
                return session;
           },
+          async jwt({ token }) {
+               return token;
+          }
      },
      secret: process.env.NEXTAUTH_SECRET,
 };

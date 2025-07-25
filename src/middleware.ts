@@ -1,45 +1,49 @@
+// middleware.ts
 import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { getToken } from 'next-auth/jwt' // Add this import
 
 export async function middleware(request: NextRequest) {
      const { pathname } = request.nextUrl;
-     const sessionToken = request.cookies.get('sessionToken')?.value;
 
-     // Redirect logged-in users from /login to /transcribe
-     if (pathname === '/login' && sessionToken) {
-          return NextResponse.redirect(new URL('/transcribe', request.url));
+     // Use NextAuth's getToken to handle session detection
+     const token = await getToken({
+          req: request,
+          secret: process.env.NEXTAUTH_SECRET
+     });
+
+     const isAuthenticated = !!token;
+
+     // Redirect logged-in users away from login page
+     if (pathname === '/login' && isAuthenticated) {
+          return NextResponse.redirect(new URL('/', request.url));
      }
 
-     const protectedExactRoutes = ['/'];
-     const protectedPrefixRoutes = ['/dashboard', '/account', '/transcribe'];
+     const protectedRoutes = [
+          '/',
+          '/dashboard',
+          '/account',
+          '/transcribe'
+     ];
 
-     if (protectedExactRoutes.includes(pathname) || protectedPrefixRoutes.some(route => pathname.startsWith(route))) {
-          if (!sessionToken) {
-               return NextResponse.redirect(new URL('/login', request.url));
-          }
+     const isProtectedRoute = protectedRoutes.some(route => 
+          pathname === route || pathname.startsWith(`${route}/`)
+     );
 
-          const session = await prisma.session.findUnique({
-               where: { sessionToken },
-               include: { user: true }
-          });
+     if (isProtectedRoute && !isAuthenticated) {
+          return NextResponse.redirect(new URL('/login', request.url));
+     }
 
-          if (!session || session.expires < new Date()) {
-               // Clear invalid session
-               const response = NextResponse.redirect(new URL('/login', request.url));
-               response.cookies.delete('sessionToken');
-               return response;
-          }
-
-          // Add user to request headers
+     // Add user to request headers if authenticated
+     if (isAuthenticated) {
           const requestHeaders = new Headers(request.headers);
-          requestHeaders.set('x-user-id', session.user.id);
-
+          requestHeaders.set('x-user-id', token.sub || '');
+     
           return NextResponse.next({
                request: {
                     headers: requestHeaders,
                }
           });
-     }     
+     }
 
      return NextResponse.next();
 }
